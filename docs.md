@@ -79,6 +79,8 @@ data = load_data("example_image.tiff")
 print(data.shape)  # Affiche les dimensions de l'image.
 ```
 
+![image_raw](./pictures/filtering.png)
+
 ---
 
 ### `compute_spectra(data, normalize=True)`
@@ -254,6 +256,10 @@ print(distance)
 ```
 
 ## Atom
+
+The goal of this section is to give tools to identify atoms by comparing the spectrum to knwon atom rays, giving such results : 
+
+![atom_scores](./pictures/atoms_scores.png)
 
 ### `calculate_temperature_single(spectrum, i1=529, i2=169)`
 Calcule la température vibrationnelle à partir d'un spectre.

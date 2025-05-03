@@ -103,6 +103,7 @@ def plot_scores_and_matches(atoms, scores, nb_matches, scores_output=None):
     fig.tight_layout()
     if scores_output is not None:
         fig.savefig(scores_output)
+        
     plt.show()
 
 def show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(8, 20), certainty=0.95, max_J=25, output_file=None, show=True):
@@ -176,11 +177,12 @@ def show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(8
 
 
     plt.tight_layout()
+    if output_file is not None:
+        fig.savefig(output_file)
+        
     if show:
         plt.show()
     
-    if output_file is not None:
-        fig.savefig(output_file)
     
     
     
