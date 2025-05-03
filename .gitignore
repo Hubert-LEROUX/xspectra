@@ -1,0 +1,21 @@
+
+# Archives
+*.zip
+*.tar.gz
+*.tar
+
+# Executables
+*.exe
+
+# Logs
+*.log
+*.out
+*.err
+
+# Latex
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.fls
+*.fdb_latexmk
