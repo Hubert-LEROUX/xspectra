@@ -1,0 +1,7 @@
+astropy==7.0.1
+astroquery==0.4.9.post1
+imageio==2.37.0
+matplotlib==3.10.1
+numpy==2.2.5
+pandas==2.2.3
+scipy==1.15.2

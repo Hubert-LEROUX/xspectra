@@ -70,8 +70,6 @@ def cut_data(*args, **kwargs):
         return data[cuts[0]:cuts[1],:]
     
     
-    
-## Récupération des axes
 def get_winspec_spectra(filename="../data/2025-03-28-capillary-discharge/spectra-337.txt"):
     import pandas as pd
     data = pd.DataFrame()
@@ -98,6 +96,7 @@ def get_points_folder(folder, method="maxima", kyrill=False):
             values.append(load_data(os.path.join(folder, file)))
             
     return np.array(delays), np.array(values)
+
 
 def get_temp_vib(r):
     return 3.954e-20 / (const.k * np.log(r * (337.09546/333.81134)))
@@ -139,23 +138,26 @@ def trichotomy(f, a, b, tol=1e-5):
     return (a + b) / 2 
 
 
-def get_best_fit(wavelengths, spectrum, T_el=1_000, T_vib=907, T_rot=1_000, elargissement=0.1, T_range=(100, 10_000), elargissement_range=(0.01, 5), verbose=False, nb_steps=10):
+def get_best_fit(wavelengths, spectrum, T_el=1_000, T_vib=907, T_rot=1_000, elargissement=0.1, w_decalage=0, T_range=(100, 10_000), elargissement_range=(0.01, 5), w_decalage_range=(-2,2), verbose=False, nb_steps=10):
     """
     Get the best fit for the spectrum
     On suppose que les fonctions sont convexes... pour la trichotomie
     """
     T_min, T_max = T_range
     min_elargissement, max_elargissement = elargissement_range
+    min_w_decalage, max_w_decalage = w_decalage_range
+    
     # On cherche la température électronique et la taille de la fente
     for i in range(nb_steps):
-        T_rot = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths, T_el=T_el, T_vib=T_vib, T_rot=x)), T_min, T_max)
-        elargissement = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=x)), min_elargissement, max_elargissement)
+        T_rot = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=x)), T_min, T_max)
+        elargissement = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=x)), min_elargissement, max_elargissement)
+        w_decalage = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+x, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=elargissement)), min_w_decalage, max_w_decalage)
         
         score = compute_score_fit(spectrum, get_spectrum(wavelengths, T_el=T_el, T_rot=T_rot))
         if verbose:
-            print(f"Iteration {i+1:3d} : Score {score:5.3f} \t elargissement = {elargissement:.2f} nm \t T_rot = {T_rot:.0f} K")
+            print(f"Iteration {i+1:3d} | Score: {score:8.3f} | Elargissement: {elargissement:6.2f} nm | T_rot: {T_rot:6.0f} K | Décalage: {w_decalage:6.2f} nm")
     
-    return score, T_rot, elargissement
+    return score, T_rot, elargissement, w_decalage
 
 def get_best_fit_random(wavelengths, spectrum, T_el=1_000, T_vib=1_000, T_rot=1_000, n=100, T_range=(100, 10_000), verbose=False):
     """
@@ -422,3 +424,58 @@ def closest_peak_distance(raie, peaks):
     float: La distance à la raie la plus proche.
     """
     return np.min(np.abs(peaks - raie))
+
+
+def delete_background(data, zone_background=(338, 341)):
+    """
+    Removes the background signal from the provided data and normalizes the result.
+    This function calculates the mean value of the signal within a specified background zone
+    and subtracts it from the signal. The resulting data is then normalized by dividing 
+    all values by the maximum value in the signal.
+    Parameters:
+    -----------
+    data : numpy.ndarray
+        A 2D array where the first column represents the x-axis (e.g., energy or wavelength)
+        and the second column represents the y-axis (e.g., intensity or signal).
+    zone_background : tuple of two floats, optional
+        A tuple specifying the range (min, max) of the background zone on the x-axis.
+        The default is (338, 341).
+    Returns:
+    --------
+    numpy.ndarray
+        A 2D array with the same shape as the input `data`, where the background signal
+        has been removed and the data has been normalized.
+    """
+    
+    data = data.copy()
+    filtre_zone_background = (zone_background[0] < data[:,0]) & (data[:,0] < zone_background[1])
+    background = data[filtre_zone_background, 1].mean()
+    data[:, 1] -= background
+    
+    # Normalisation
+    data[:, 1] /= data[:, 1].max()
+    return data
+
+
+def find_index_primary_peaks(wavelengths, spectrum, height=0.01, distance=100, w_sec_peak=333.82):
+    """Find the indices of the primary and secondary peaks in a spectrum.
+
+    Args:
+        wavelengths (np.ndarray): Array of wavelengths corresponding to the spectrum.
+        spectrum (np.ndarray): Array of intensity values representing the spectrum.
+        height (float, optional): Minimum height of the peaks. Defaults to 0.01.
+        distance (int, optional): Minimum distance between peaks. Defaults to 100.
+        w_sec_peak (float, optional): Wavelength of the secondary peak. Defaults to 333.82.
+
+    Returns:
+        tuple: Indices of the primary and secondary peaks in the spectrum.
+    """
+    from scipy.signal import find_peaks
+    
+    peaks, _ = find_peaks(spectrum, height=height, distance=distance)
+    primary_peak = np.argmax(spectrum)
+    secondary_peak = peaks[np.abs(wavelengths[peaks]-w_sec_peak).argmin()] # La longueur d'onde de la transition v'=1->v''=1 est de 333.82 nm
+    return primary_peak, secondary_peak
+
+
+

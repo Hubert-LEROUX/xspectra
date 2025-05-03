@@ -105,7 +105,7 @@ def plot_scores_and_matches(atoms, scores, nb_matches, scores_output=None):
         fig.savefig(scores_output)
     plt.show()
 
-def show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(8, 20), certainty=0.95, max_J=25):
+def show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(8, 20), certainty=0.95, max_J=25, output_file=None, show=True):
     """
     Visualizes the results of rotational temperature (T_rot) calculation using a log method.
     This function plots the data points, the linear regression fit, and provides additional
@@ -176,7 +176,11 @@ def show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(8
 
 
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
+    
+    if output_file is not None:
+        fig.savefig(output_file)
     
     
     
