@@ -22,7 +22,7 @@ def compute_spectra(data, normalize=True):
         
     return spectrum
 
-def get_spectra(file, cut_proportion=0.75, filter_data_value=5, normalize=True):
+def extract_spectrum(file, cut_proportion=0.75, filter_data_value=5, normalize=True):
     data = imageio.imread(file)
     
     if filter_data_value is not None:

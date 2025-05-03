@@ -31,6 +31,13 @@
   - [Visualization](#visualization)
     - [`plot_spectra_with_rays(spectrum, longueurs_onde, rays, spectra_output=None)`](#plot_spectra_with_raysspectrum-longueurs_onde-rays-spectra_outputnone)
     - [`plot_scores_and_matches(atoms, scores, nb_matches, scores_output=None)`](#plot_scores_and_matchesatoms-scores-nb_matches-scores_outputnone)
+    - [`show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(8, 20), certainty=0.95, max_J=25, output_file=None, show=True)`](#show_result_calculation_trotwavelengths_target-spectrum_target-j_range8-20-certainty095-max_j25-output_filenone-showtrue)
+    - [`analyse_spectrum(filename, l_min=200, l_max=850, resolution=13.9072e-12, top=10, height=1e-2, cibles=["Hg I", "H I", "He I", "Ne I", "Ar I", "Kr I", "Xe I", "Cd I", "Zn I", "Na I"], spectra_output=None, scores_output=None)`](#analyse_spectrumfilename-l_min200-l_max850-resolution139072e-12-top10-height1e-2-cibleshg-i-h-i-he-i-ne-i-ar-i-kr-i-xe-i-cd-i-zn-i-na-i-spectra_outputnone-scores_outputnone)
+  - [Bin](#bin)
+    - [Usage](#usage)
+      - [Positional Arguments:](#positional-arguments)
+      - [Optional Arguments:](#optional-arguments)
+      - [Examples:](#examples)
 
 
 ## Introduction 
@@ -451,6 +458,8 @@ wavelengths, spectrum = get_spectrum(
 print(wavelengths, spectrum)  # Longueurs d'onde et intensités
 ```
 
+![spectre_simulation](./pictures/spectrum_simulation.png)
+
 ## Visualization
 
 ### `plot_spectra_with_rays(spectrum, longueurs_onde, rays, spectra_output=None)`
@@ -493,3 +502,129 @@ nb_matches = [5, 3]
 plot_scores_and_matches(atoms, scores, nb_matches)
 ```
 
+### `show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(8, 20), certainty=0.95, max_J=25, output_file=None, show=True)`
+Visualise les résultats du calcul de la température rotationnelle (T_rot) à l'aide d'une méthode logarithmique.
+
+**Paramètres :**
+- `wavelengths_target` (numpy.ndarray) : Longueurs d'onde cibles.
+- `spectrum_target` (numpy.ndarray) : Spectre cible.
+- `J_range` (tuple, optionnel) : Plage des nombres quantiques (J) pour la régression linéaire. Par défaut : `(8, 20)`.
+- `certainty` (float, optionnel) : Niveau de confiance pour le calcul de l'incertitude. Par défaut : `0.95`.
+- `max_J` (int, optionnel) : Nombre quantique maximal à considérer. Par défaut : `25`.
+- `output_file` (str, optionnel) : Chemin pour sauvegarder le graphique. Par défaut : `None`.
+- `show` (bool, optionnel) : Si `True`, affiche le graphique. Par défaut : `True`.
+
+**Exemple :**
+```python
+from xspectra.visualization import show_result_calculation_Trot
+
+wavelengths_target = [400, 450, 500, 550, 600]
+spectrum_target = [0.1, 0.3, 0.5, 0.4, 0.2]
+show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(10, 20))
+```
+
+![T_rot_reg](./pictures/Trot_R_branch.png)
+
+---
+
+### `analyse_spectrum(filename, l_min=200, l_max=850, resolution=13.9072e-12, top=10, height=1e-2, cibles=["Hg I", "H I", "He I", "Ne I", "Ar I", "Kr I", "Xe I", "Cd I", "Zn I", "Na I"], spectra_output=None, scores_output=None)`
+Analyse un spectre en détectant les raies et en les comparant aux raies cibles.
+
+**Paramètres :**
+- `filename` (str) : Chemin du fichier contenant le spectre.
+- `l_min` (float, optionnel) : Longueur d'onde minimale du spectre. Par défaut : `200`.
+- `l_max` (float, optionnel) : Longueur d'onde maximale du spectre. Par défaut : `850`.
+- `resolution` (float, optionnel) : Résolution du spectre. Par défaut : `13.9072e-12`.
+- `top` (int, optionnel) : Nombre de raies à récupérer pour chaque atome. Par défaut : `10`.
+- `height` (float, optionnel) : Hauteur minimale des pics à détecter. Par défaut : `1e-2`.
+- `cibles` (list, optionnel) : Liste des atomes cibles. Par défaut : `["Hg I", "H I", "He I", "Ne I", "Ar I", "Kr I", "Xe I", "Cd I", "Zn I", "Na I"]`.
+- `spectra_output` (str, optionnel) : Chemin pour sauvegarder le graphique des spectres. Par défaut : `None`.
+- `scores_output` (str, optionnel) : Chemin pour sauvegarder le graphique des scores. Par défaut : `None`.
+
+**Exemple :**
+```python
+from xspectra.visualization import analyse_spectrum
+
+scores, matches = analyse_spectrum("example_spectrum.tiff", l_min=300, l_max=700, top=5)
+print(scores, matches)
+```
+
+## Bin
+
+The `bin` module provides a command-line interface for processing spectrum files to calculate vibrational and rotational temperatures. It supports background removal, peak detection, and fitting with a simulation spectrum. Results can be saved to a specified folder, and plots can be displayed or saved.
+
+### Usage
+
+
+The `bin` module can be executed from the command line with the following options:
+
+```bash
+python -m xspectra.bin <filename> [options]
+```
+
+#### Positional Arguments:
+- `<filename>`: Path to the spectrum file or directory containing spectrum files.
+
+#### Optional Arguments:
+- `-o, --output_folder`: Folder to save results (optional).
+- `-sp, --show_plots`: Show plots for fit and regression.
+- `-d, --delimiter`: Delimiter used in the spectrum file (default: `\t`).
+- `-lh, --length_header`: Number of header lines to skip in the spectrum file (default: 0).
+- `-fl, --fit_limits`: Fit limits for the simulation as a tuple (lower, upper) (default: `(335.3, 338.0)`).
+- `-jr, --J_range`: J range for rotational temperature calculation (default: `(8, 20)`).
+- `-v, --verbose`: Set verbosity level (0: silent, 1: verbose).
+- `--T_range`: Temperature range for the fit (default: `(100, 1200)`).
+- `--elargissement_range`: Broadening range for the fit (default: `(0.05, 0.12)`).
+- `--w_decalage_range`: Wavelength deviation range for the fit (default: `(-2, 2)`).
+- `--nb_steps`: Number of steps for the fit optimization (default: 5).
+
+#### Examples:
+1. Process a single file with default parameters:
+  ```bash
+  python -m xspectra.bin ./examples/data/spectrum.txt -o results
+  ```
+
+2. Process all files in a directory:
+  ```bash
+  python -m xspectra.bin ./examples/data/temperature_analysis -o res_bin
+  ```
+
+3. Show plots and enable verbose output:
+  ```bash
+  python -m xspectra.bin ./examples/data/spectrum.txt -v 1 -sp -o results
+  ```
+
+4. Custom delimiter and header length:
+  ```bash
+  python -m xspectra.bin spectrum.csv -d ',' -lh 2 -o results
+  ```
+
+5. Custom fit limits and J range:
+  ```bash
+  python -m xspectra.bin spectrum.txt -fl 335.0 338.5 -jr 10 25 -o results
+  ```
+
+6. Advanced temperature and broadening settings:
+  ```bash
+  python -m xspectra.bin spectrum.txt --T_range 200 1500 --elargissement_range 0.03 0.15
+  ```
+
+7. Combine multiple parameters:
+  ```bash
+  python -m xspectra.bin spectrum.txt -sp -v 1 -fl 335.0 338.5 -jr 10 25 --nb_steps 10
+  ```
+
+
+```bash
+>>> python -m xspectra.bin ./examples/data/temperature_analysis
+Processing files: 100%|█████████████████████████████████████████| 3/3 [00:09<00:00,  3.28s/it]
++-------------+------------------------+------------------------------+-------------------+-----------------------------+------------+
+|   T_vib (K) | T_rot (K) - R branch   |   T_rot (K) - fit simulation |   Broadening (nm) |   Wavelength Deviation (nm) | Filename   |
++=============+========================+==============================+===================+=============================+============+
+|     808.233 | 302 ± 14               |                          255 |             0.086 |                       0.104 | 1.txt      |
++-------------+------------------------+------------------------------+-------------------+-----------------------------+------------+
+|     823.692 | 312 ± 8                |                          269 |             0.086 |                       0.102 | 2.txt      |
++-------------+------------------------+------------------------------+-------------------+-----------------------------+------------+
+|     832.07  | 363 ± 16               |                          305 |             0.085 |                       0.099 | 3.txt      |
++-------------+------------------------+------------------------------+-------------------+-----------------------------+------------+
+```

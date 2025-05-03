@@ -227,6 +227,31 @@ def get_transition_probability(l, n_1=1, L1=1, L2=1, v1=0, v2=0, J1=0, J2=0):
 
 def gaussian(X, mu, sigma=0.1):
     return np.exp(-((X - mu) ** 2) / (2 * sigma ** 2)) / (np.sqrt(2 * np.pi) * sigma)
+
+def trapzezoidal(X, mu, width_top=0.22, width_bottom=0.39, intensity=2):
+    """
+    """
+    assert width_top < width_bottom, "width_top must be smaller than width_bottom"
+    # On fait un trapèze centré sur mu
+    pente = 2*(intensity) / (width_bottom - width_top)
+    return np.clip(pente*width_bottom/2- pente * np.abs(X - mu), 0, intensity)
+
+def creneau(X, mu, width=0.22, intensity=2):
+    """
+    """
+    return intensity * (np.abs(X - mu) < width/2)
+
+def lorentzian(X, mu, gamma=0.1):
+    return (gamma / np.pi) / ((X - mu) ** 2 + gamma ** 2)
+
+def voigt(X, mu, sigma=0.1, gamma=0.1):
+    """
+    Voigt profile
+    """
+    # TODO : implementer la fonction de voigt
+    return gaussian(X, mu, sigma) * lorentzian(X, mu, gamma)
+
+
     
 def get_spectrum(wavelengths, v1=0, v2=0, nb_rot_levels=60,  T_el=300, T_rot=300, T_vib=300, sigma_exp=0.1, shape=gaussian):
     # wavelengths = np.linspace(llims[0], llims[1], nb_points)
@@ -258,4 +283,116 @@ def get_spectrum(wavelengths, v1=0, v2=0, nb_rot_levels=60,  T_el=300, T_rot=300
             j1, j2 = i, i
             l, p = get_l_prob(v1, j1, v2, j2)#! Raie Q
             spectrum += shape(wavelengths, l, sigma_exp) * p * wavelengths
+    return spectrum/np.max(spectrum)
+
+
+def dichotomy_search(func, x0, x1, tol=1e-5):
+    """
+    Perform a dichotomy search to find the root of a function within a specified interval.
+
+    Parameters
+    ----------
+    func : callable
+        The function for which the root is to be found.
+    x0 : float
+        The lower bound of the interval.        
+    x1 : float
+        The upper bound of the interval.
+        
+    tol : float, optional
+        The tolerance for convergence. Default is 1e-5.
+    Returns
+    -------
+    float
+        The root of the function within the specified interval.
+    Raises
+    ------
+    ValueError
+        If the function does not change sign over the interval.
+    """
+    # Check if the function changes sign over the interval
+    if func(x0) * func(x1) > 0:
+        raise ValueError("Function does not change sign over the interval.")
+
+    while abs(x1 - x0) > tol:
+        mid = (x0 + x1) / 2
+        if func(mid) == 0:
+            return mid
+        elif func(mid) * func(x0) < 0:
+            x1 = mid
+        else:
+            x0 = mid
+
+    return (x0 + x1) / 2
+
+def get_whole_spectrum(wavelengths, nb_vib_levels=5, nb_rot_levels=60,  T_el=300, T_rot=300, T_vib=300, sigma_exp=0.1, shape=gaussian, relative_addition=None):
+    """
+    Compute the whole spectrum for a given range of wavelengths based on vibrational and rotational transitions.
+    Parameters:
+        wavelengths (numpy.ndarray): Array of wavelengths (in nm) over which the spectrum is computed.
+        nb_vib_levels (int, optional): Number of vibrational levels to consider. Default is 5.
+        nb_rot_levels (int, optional): Number of rotational levels to consider. Default is 60.
+        T_el (float, optional): Electronic temperature in Kelvin. Default is 300.
+        T_rot (float, optional): Rotational temperature in Kelvin. Default is 300.
+        T_vib (float, optional): Vibrational temperature in Kelvin. Default is 300.
+        sigma_exp (float, optional): Standard deviation for the line shape function. Default is 0.1.
+        shape (callable, optional): Line shape function (e.g., Gaussian). Must accept arguments (wavelengths, center, sigma). Default is `gaussian`.
+    Returns:
+        numpy.ndarray: Normalized spectrum array corresponding to the input wavelengths.
+    Notes:
+        - The function calculates the spectrum by iterating over vibrational and rotational levels.
+        - It considers P, Q, and R branches of transitions and computes the corresponding probabilities and wavelengths.
+        - The spectrum is normalized by dividing by its maximum value.
+        - The `energy_function_C3P`, `energy_function_B3P`, `population_distribution_B3P`, and `get_transition_probability` functions are assumed to be defined elsewhere in the codebase.
+    """
+    wmin, wmax = wavelengths[0], wavelengths[-1]    
+        
+    if relative_addition is not None:
+        resolution = (wmax-wmin) / len(wavelengths)
+        plage_sum = int(relative_addition * sigma_exp / 2 / resolution) # plage sur laquelle on somme
+    
+    spectrum = np.zeros(len(wavelengths), dtype=float)
+
+    def get_l_prob(v1, j1, v2, j2):
+        _,_,_,E_1 = energy_function_C3P(v=v1, j=j1)
+        _,_,_,E_2 = energy_function_B3P(v=v2, j=j2)
+        Delta_E = E_1 - E_2 # cm-1
+        l = 1/Delta_E * (1e7) # (nm)  longueur d'onde
+        n_1 = population_distribution_B3P(v=v1, J=j1, T_el=T_el, T_rot=T_rot, T_vib=T_vib)/ (l*10**9)
+
+        return l, get_transition_probability(l, n_1=n_1, L1=1, L2=1, v1=v1, v2=v2, J1=j1, J2=j2)
+    
+    def add_line(l, p):
+        nonlocal spectrum
+        if l < wmin or l > wmax:
+            return
+        if relative_addition is None:
+            spectrum += shape(wavelengths, l, sigma_exp) * p * wavelengths
+        else:
+            index_middle = int(dichotomy_search(lambda x: wavelengths[int(x)]-l, 0, len(wavelengths)-1))
+            for i in range(max(0, index_middle-plage_sum), min(len(wavelengths), index_middle+plage_sum)):
+                spectrum[i] += shape(wavelengths[i], l, sigma_exp) * p * wavelengths[i]
+                
+    
+    
+
+    for v1 in range(0, nb_vib_levels):
+        for v2 in range(0, nb_vib_levels):
+            for i in range(0, nb_rot_levels):
+                if i-1 >= 0:
+                    j1, j2 = i, i-1 #! Raie P
+                    l, p = get_l_prob(v1, j1, v2, j2)
+                    add_line(l, p)
+
+                    
+                if i+1 < nb_rot_levels:
+                    j1, j2 = i, i+1 #! Raie R   
+                    l, p = get_l_prob(v1, j1, v2, j2)
+                    add_line(l, p)
+
+                if i > 0:   
+                    j1, j2 = i, i
+                    l, p = get_l_prob(v1, j1, v2, j2)#! Raie Q
+                    add_line(l, p)
+                    
     return spectrum/np.max(spectrum)
