@@ -50,7 +50,7 @@ def cm2J(x):
     return x*sp.constants.h*sp.constants.c*10**2
 
 def get_energy_function_given_state(omega_e=omega_e_B3P, omega_chi=omega_chi_B3P, A=A_B3P, couplage_spin_orbite=couplage_spin_orbite_B3P, T=T_B3P, B=B_B3P):
-    def energy_function(v=0, j=0, L=0, Sigma=0, sign_state=1, in_cm=True):
+    def energy_function(v=0, j=0, L=0, Sigma=0, sign_state=0, in_cm=True):
         """
         Calculate the energy components and total energy of a molecular state.
         Parameters:
@@ -58,7 +58,7 @@ def get_energy_function_given_state(omega_e=omega_e_B3P, omega_chi=omega_chi_B3P
             j (int, optional): Rotational quantum number. Default is 0.
             L (int, optional): Orbital angular momentum quantum number. Default is 0.
             Sigma (int, optional): Spin quantum number. Default is 0.
-            sign_state (int, optional): Sign of the state +1 for e and -1 for f. Default is 1.
+            sign_state (int, optional): Sign of the state +1 for e and -1 for f. Default is 0 to avoid the effect
             in_cm (bool, optional): If True, return energy in cm⁻¹. If False, return energy in joules. Default is True.
         Returns:
             tuple: A tuple containing:
