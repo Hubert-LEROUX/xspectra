@@ -19,6 +19,13 @@ omega_chi_B3P = 14.122 # cm^-1
 B_C3P = 1.825
 B_B3P = 1.637
 
+couplage_spin_orbite_C3P = 6 # cm-1
+couplage_spin_orbite_B3P = 18 # cm-1
+
+A_C3P = 42.2 # cm-1
+A_B3P = 39.2 # cm-1
+
+
 
 franck_condon_factors = [
 
@@ -42,18 +49,38 @@ franck_condon_factors = np.array(franck_condon_factors)
 def cm2J(x):
     return x*sp.constants.h*sp.constants.c*10**2
 
-def get_energy_function_given_state(omega_e=omega_e_B3P, omega_chi=omega_chi_B3P, T=T_B3P, B=B_B3P):
-    def energy_function(v=0, j=0, in_cm=True):
-        # TODO ajouter la correction au deuxième ordre pour le rotationnel
+def get_energy_function_given_state(omega_e=omega_e_B3P, omega_chi=omega_chi_B3P, A=A_B3P, couplage_spin_orbite=couplage_spin_orbite_B3P, T=T_B3P, B=B_B3P):
+    def energy_function(v=0, j=0, L=0, Sigma=0, sign_state=1, in_cm=True):
+        """
+        Calculate the energy components and total energy of a molecular state.
+        Parameters:
+            v (int, optional): Vibrational quantum number. Default is 0.
+            j (int, optional): Rotational quantum number. Default is 0.
+            L (int, optional): Orbital angular momentum quantum number. Default is 0.
+            Sigma (int, optional): Spin quantum number. Default is 0.
+            sign_state (int, optional): Sign of the state +1 for e and -1 for f. Default is 1.
+            in_cm (bool, optional): If True, return energy in cm⁻¹. If False, return energy in joules. Default is True.
+        Returns:
+            tuple: A tuple containing:
+                - T (float): Electronic energy (not explicitly calculated in the function).
+                - T_vib (float): Vibrational energy.
+                - T_rot (float): Rotational energy.
+                - Total energy (float): Sum of electronic, vibrational, and rotational energies.
+        """
+        # T_vib -OK
         T_vib = omega_e*(v+0.5) - omega_chi*(v+0.5)**2
-        T_rot = B*(j*(j+1))
+        
+        # T_rot - Plus comliqué pour la dégénérescence
+        Omega = L + Sigma
+        q = A / (2*(j+1))
+        T_rot = B*(j*(j+1)) + couplage_spin_orbite * abs(Omega) * L + sign_state * q * (j+0.5)
         if in_cm:
             return (T, T_vib, T_rot, T + T_vib + T_rot)
         return (cm2J(T), cm2J(T_vib), cm2J(T_rot), cm2J(T + T_vib + T_rot))
     return energy_function
 
-energy_function_B3P = get_energy_function_given_state(omega_e=omega_e_B3P, omega_chi=omega_chi_B3P, T=T_B3P, B=B_B3P)
-energy_function_C3P = get_energy_function_given_state(omega_e=omega_e_C3P, omega_chi=omega_chi_C3P, T=T_C3P, B=B_C3P)
+energy_function_B3P = get_energy_function_given_state(omega_e=omega_e_B3P, omega_chi=omega_chi_B3P, A=A_B3P, couplage_spin_orbite=couplage_spin_orbite_B3P, T=T_B3P, B=B_B3P)
+energy_function_C3P = get_energy_function_given_state(omega_e=omega_e_C3P, omega_chi=omega_chi_C3P, A=A_C3P, couplage_spin_orbite=couplage_spin_orbite_C3P, T=T_C3P, B=B_C3P)
 
 def get_botzmann_population_distribution(T_e=T_B3P, omega_e=omega_e_B3P, omega_chi=omega_chi_B3P, B=B_B3P):
     """
@@ -253,7 +280,7 @@ def voigt(X, mu, sigma=0.1, gamma=0.1):
 
 
     
-def get_spectrum(wavelengths, v1=0, v2=0, nb_rot_levels=60,  T_el=300, T_rot=300, T_vib=300, sigma_exp=0.1, shape=gaussian):
+def get_spectrum(wavelengths, v1=0, v2=0, nb_rot_levels=60,T_el=300, T_rot=300, T_vib=300, sigma_exp=0.1, shape=gaussian):
     # wavelengths = np.linspace(llims[0], llims[1], nb_points)
     spectrum = np.zeros(len(wavelengths), dtype=float)
 
@@ -284,6 +311,42 @@ def get_spectrum(wavelengths, v1=0, v2=0, nb_rot_levels=60,  T_el=300, T_rot=300
             l, p = get_l_prob(v1, j1, v2, j2)#! Raie Q
             spectrum += shape(wavelengths, l, sigma_exp) * p * wavelengths
     return spectrum/np.max(spectrum)
+
+
+def get_spectrum_deg_free(wavelengths, S=1, v1=0, v2=0, nb_rot_levels=60,T_el=300, T_rot=300, T_vib=300, sigma_exp=0.1, shape=gaussian):
+    # wavelengths = np.linspace(llims[0], llims[1], nb_points)
+    spectrum = np.zeros(len(wavelengths), dtype=float)
+
+    def get_l_prob(v1, j1, v2, j2, Sigma=0, sign_state=0):
+        _,_,_,E_1 = energy_function_C3P(v=v1, j=j1, Sigma=Sigma, sign_state=sign_state)
+        _,_,_,E_2 = energy_function_B3P(v=v2, j=j2, Sigma=Sigma, sign_state=sign_state)
+        Delta_E = E_1 - E_2 # cm-1
+        l = 1/Delta_E * (1e7) # (nm)  longueur d'onde
+        n_1 = population_distribution_B3P(v=v1, J=j1, T_el=T_el, T_rot=T_rot, T_vib=T_vib)/ (l*10**9)
+
+        return l, get_transition_probability(l, n_1=n_1, L1=1, L2=1, v1=v1, v2=v2, J1=j1, J2=j2)
+
+    for Sigma in np.arange(-S, S+1, 1):
+        # print(Sigma)
+        for sign_state in [-1,1]:
+            for i in range(0, nb_rot_levels):
+                if i-1 >= 0:
+                    j1, j2 = i, i-1 #! Raie P
+                    l, p = get_l_prob(v1, j1, v2, j2, Sigma=Sigma, sign_state=sign_state)
+                    spectrum += shape(wavelengths, l, sigma_exp) * p * wavelengths
+
+                    
+                if i+1 < nb_rot_levels:
+                    j1, j2 = i, i+1 #! Raie R   
+                    l, p = get_l_prob(v1, j1, v2, j2, Sigma=Sigma, sign_state=sign_state)
+                    spectrum += shape(wavelengths, l, sigma_exp) * p * wavelengths
+
+                if i > 0:   
+                    j1, j2 = i, i #! Raie Q
+                    l, p = get_l_prob(v1, j1, v2, j2, Sigma=Sigma, sign_state=sign_state)
+                    spectrum += shape(wavelengths, l, sigma_exp) * p * wavelengths
+    return spectrum/np.max(spectrum)
+
 
 
 def dichotomy_search(func, x0, x1, tol=1e-5):
