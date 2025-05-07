@@ -163,8 +163,15 @@ def show_result_calculation_Trot(wavelengths_target, spectrum_target, J_range=(8
     ax3.set_xlabel("Longueur d'onde (nm)")
 
 
-    ax1.axvline(X[J_deb], color='purple', linestyle='--', alpha=0.7, label="limites régression linéaire")
-    ax1.axvline(X[J_fin], color='purple', linestyle='--', alpha=0.7)
+    def get_index(array, value):
+        """
+        Returns the index of the element in the array that matches the given value.
+        If the value is not found, raises a ValueError.
+        """
+        return np.where(array == value)[0][0]
+
+    ax1.axvline(X[np.where(J == J_deb)[0][0]], color='purple', linestyle='--', alpha=0.7, label="limites régression linéaire")
+    ax1.axvline(X[np.where(J == J_fin)[0][0]], color='purple', linestyle='--', alpha=0.7)
 
     # Trace la régression linéaire
     x_fit = np.linspace(X.min(), X.max(), 100)
