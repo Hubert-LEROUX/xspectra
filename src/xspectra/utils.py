@@ -118,11 +118,17 @@ def calculate_temperature_single(spectrum, i1=529, i2=169):
 
 #### METHODE FIT SPECTRE THEORIQUE #######
 
-def compute_score_fit(spectrum, fit):
+def compute_score_fit(spectrum, fit, method="sum_squares"):
     """
     Compute the score of the fit
     """
-    return np.sum((spectrum - fit)**2) 
+    if method == "sum_squares":
+        return np.sum((spectrum - fit)**2) 
+    elif method == "sum_abs":
+        return np.sum(np.abs(spectrum - fit))
+    elif method == "sum_squares_log":
+        return np.sum((np.log(spectrum/fit))**2)
+        
 
 def trichotomy(f, a, b, tol=1e-5):
     """
@@ -138,7 +144,7 @@ def trichotomy(f, a, b, tol=1e-5):
     return (a + b) / 2 
 
 
-def get_best_fit(wavelengths, spectrum, T_el=1_000, T_vib=907, T_rot=1_000, elargissement=0.1, w_decalage=0, T_range=(100, 10_000), elargissement_range=(0.01, 5), w_decalage_range=(-2,2), verbose=False, nb_steps=10):
+def get_best_fit(wavelengths, spectrum, T_el=1_000, T_vib=907, T_rot=1_000, elargissement=0.1, w_decalage=0, T_range=(100, 10_000), elargissement_range=(0.01, 5), w_decalage_range=(-2,2), verbose=False, nb_steps=10, score_method="sum_squares"):
     """
     Get the best fit for the spectrum
     On suppose que les fonctions sont convexes... pour la trichotomie
@@ -149,9 +155,9 @@ def get_best_fit(wavelengths, spectrum, T_el=1_000, T_vib=907, T_rot=1_000, elar
     
     # On cherche la température électronique et la taille de la fente
     for i in range(nb_steps):
-        T_rot = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=x)), T_min, T_max)
-        elargissement = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=x)), min_elargissement, max_elargissement)
-        w_decalage = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+x, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=elargissement)), min_w_decalage, max_w_decalage)
+        T_rot = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=x), method="sum_squares"), T_min, T_max)
+        elargissement = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=x), method="sum_squares"), min_elargissement, max_elargissement)
+        w_decalage = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+x, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=elargissement), method="sum_squares"), min_w_decalage, max_w_decalage)
         
         score = compute_score_fit(spectrum, get_spectrum(wavelengths, T_el=T_el, T_rot=T_rot))
         if verbose:
