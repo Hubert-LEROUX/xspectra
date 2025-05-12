@@ -18,7 +18,7 @@ def process_spectrum(filename, output_folder, args, show_results=True):
     if args.verbose:
         print("Calculating vibrational temperature...")
     i_primary, i_secondary = utils.find_index_primary_peaks(data[:, 0], data[:, 1], height=0.01, distance=100)
-    T_vib = utils.calculate_temperature_single(data[:, 1], i1=i_primary, i2=i_secondary)
+    T_vib = utils.compute_t_vib_by_ratio(data[:, 1], i1=i_primary, i2=i_secondary)
 
     if args.verbose:
         print("Calculating rotational temperature (R branch)...")

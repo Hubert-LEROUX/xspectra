@@ -109,7 +109,7 @@ def transform(X, x1=337.459, y1=337.095, x2=334.44, y2=333.81):
 
 #### Calcul de T_vib ######
 
-def calculate_temperature_single(spectrum, i1=529, i2=169):
+def compute_t_vib_by_ratio(spectrum, i1=529, i2=169):
     spectrum = spectrum.copy()
     # spectrum -= min(spectrum)
     r = spectrum[i1] / spectrum[i2]
@@ -144,26 +144,55 @@ def trichotomy(f, a, b, tol=1e-5):
     return (a + b) / 2 
 
 
-def get_best_fit(wavelengths, spectrum, T_el=1_000, T_vib=907, T_rot=1_000, elargissement=0.1, w_decalage=0, T_range=(100, 10_000), elargissement_range=(0.01, 5), w_decalage_range=(-2,2), verbose=False, nb_steps=10, score_method="sum_squares"):
+def get_best_fit(wavelengths, spectrum, T_el=1_000, T_vib=907, T_rot=1_000, elargissement=0.1, w_decalage=0, w_scale=1, w_scale_range=None, T_vib_range=None,T_rot_range=None, elargissement_range=None, w_decalage_range=None, verbose=False, nb_steps=10, modelisation_spectrum_function=get_spectrum, score_method="sum_squares"):
     """
     Get the best fit for the spectrum
     On suppose que les fonctions sont convexes... pour la trichotomie
     """
-    T_min, T_max = T_range
-    min_elargissement, max_elargissement = elargissement_range
-    min_w_decalage, max_w_decalage = w_decalage_range
+    # On fixe les bornes de recherche pour chaque paramètre
+    if T_rot_range is not None:
+        T_rot_min, T_rot_max = T_rot_range
+    else:
+        T_rot_min, T_rot_max = T_rot, T_rot
+        
+    if T_vib_range is not None:
+        T_vib_min, T_vib_max = T_vib_range
+    else:
+        T_vib_min, T_vib_max = T_vib, T_vib
+        
+    if elargissement_range is not None: 
+        min_elargissement, max_elargissement = elargissement_range
+    else:
+        min_elargissement, max_elargissement = elargissement, elargissement
+    if w_decalage_range is not None:
+        min_w_decalage, max_w_decalage = w_decalage_range
+    else:
+        min_w_decalage, max_w_decalage = w_decalage, w_decalage
+    if w_scale_range is not None:
+        min_w_scale, max_w_scale = w_scale_range
+    else:
+        min_w_scale, max_w_scale = w_scale, w_scale
     
     # On cherche la température électronique et la taille de la fente
     for i in range(nb_steps):
-        T_rot = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=x), method="sum_squares"), T_min, T_max)
-        elargissement = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=x), method="sum_squares"), min_elargissement, max_elargissement)
-        w_decalage = trichotomy(lambda x: compute_score_fit(spectrum, get_spectrum(wavelengths+x, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=elargissement), method="sum_squares"), min_w_decalage, max_w_decalage)
-        
-        score = compute_score_fit(spectrum, get_spectrum(wavelengths, T_el=T_el, T_rot=T_rot))
+        if T_vib_range is not None:
+            T_vib = trichotomy(lambda x: compute_score_fit(spectrum, modelisation_spectrum_function(w_scale*wavelengths+w_decalage, T_el=T_el, T_vib=x, T_rot=T_rot), method="sum_squares"), T_vib_min, T_vib_max,tol=1e-1)
+        if T_rot_range is not None:
+            T_rot = trichotomy(lambda x: compute_score_fit(spectrum, modelisation_spectrum_function(w_scale*wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=x), method="sum_squares"), T_rot_min, T_rot_max,tol=1e-1)
+        if w_scale_range is not None:
+            elargissement = trichotomy(lambda x: compute_score_fit(spectrum, modelisation_spectrum_function(w_scale*wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, 
+        T_rot=T_rot, sigma_exp=x), method="sum_squares"), min_elargissement, max_elargissement)
+        if w_decalage_range is not None:
+            w_decalage = trichotomy(lambda x: compute_score_fit(spectrum, modelisation_spectrum_function(w_scale*wavelengths+x, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=elargissement), method="sum_squares"), min_w_decalage, max_w_decalage)
+            
+        if w_scale_range is not None:
+            w_scale = trichotomy(lambda x: compute_score_fit(spectrum, modelisation_spectrum_function(x*wavelengths+w_decalage, T_el=T_el, T_vib=T_vib, T_rot=T_rot, sigma_exp=elargissement), method="sum_squares"), min_w_scale, max_w_scale, tol=1e-8)
+            
+        score = compute_score_fit(spectrum, modelisation_spectrum_function(w_scale*wavelengths+w_decalage, T_el=T_el, T_rot=T_rot))
         if verbose:
-            print(f"Iteration {i+1:3d} | Score: {score:8.3f} | Elargissement: {elargissement:6.2f} nm | T_rot: {T_rot:6.0f} K | Décalage: {w_decalage:6.2f} nm")
+            print(f"Iteration {i+1:3d} | Score: {score:8.3f} | Elargissement: {elargissement:6.2f} nm | T_vib = {T_vib:6.0f} | T_rot: {T_rot:6.0f} K | Scale {w_scale:1.8f} | Décalage: {w_decalage:6.2f} nm")
     
-    return score, T_rot, elargissement, w_decalage
+    return score, T_vib, T_rot, elargissement, w_decalage, w_scale
 
 def get_best_fit_random(wavelengths, spectrum, T_el=1_000, T_vib=1_000, T_rot=1_000, n=100, T_range=(100, 10_000), verbose=False):
     """
