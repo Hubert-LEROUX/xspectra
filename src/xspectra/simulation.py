@@ -345,7 +345,10 @@ def get_spectrum_deg_free(wavelengths, S=1, v1=0, v2=0, nb_rot_levels=60,T_el=30
                     j1, j2 = i, i #! Raie Q
                     l, p = get_l_prob(v1, j1, v2, j2, Sigma=Sigma, sign_state=sign_state)
                     spectrum += shape(wavelengths, l, sigma_exp) * p * wavelengths
-    return spectrum/np.max(spectrum)
+    M=np.max(spectrum)
+    if M == 0:
+        return spectrum
+    return spectrum/M
 
 
 
@@ -408,14 +411,6 @@ def get_whole_spectrum(wavelengths, nb_vib_levels=5, nb_rot_levels=60,  T_el=300
         - The spectrum is normalized by dividing by its maximum value.
         - The `energy_function_C3P`, `energy_function_B3P`, `population_distribution_B3P`, and `get_transition_probability` functions are assumed to be defined elsewhere in the codebase.
     """
-    wmin, wmax = wavelengths[0], wavelengths[-1]    
-        
-    if relative_addition is not None:
-        resolution = (wmax-wmin) / len(wavelengths)
-        plage_sum = int(relative_addition * sigma_exp / 2 / resolution) # plage sur laquelle on somme
-    
-    spectrum = np.zeros(len(wavelengths), dtype=float)
-
     def get_l_prob(v1, j1, v2, j2):
         _,_,_,E_1 = energy_function_C3P(v=v1, j=j1)
         _,_,_,E_2 = energy_function_B3P(v=v2, j=j2)
@@ -426,7 +421,7 @@ def get_whole_spectrum(wavelengths, nb_vib_levels=5, nb_rot_levels=60,  T_el=300
         return l, get_transition_probability(l, n_1=n_1, L1=1, L2=1, v1=v1, v2=v2, J1=j1, J2=j2)
     
     def add_line(l, p):
-        nonlocal spectrum
+        nonlocal spectrum 
         if l < wmin or l > wmax:
             return
         if relative_addition is None:
@@ -437,7 +432,15 @@ def get_whole_spectrum(wavelengths, nb_vib_levels=5, nb_rot_levels=60,  T_el=300
                 spectrum[i] += shape(wavelengths[i], l, sigma_exp) * p * wavelengths[i]
                 
     
+    wmin, wmax = wavelengths[0], wavelengths[-1]   
+    # print(f"wmin : {wmin}, wmax : {wmax}") 
+        
+    if relative_addition is not None: #! attention fonctionne pas si on prend une plage de donnée !!!
+        resolution = (wmax-wmin) / len(wavelengths)
+        plage_sum = int(relative_addition * sigma_exp / 2 / resolution) # plage sur laquelle on somme
     
+    spectrum = np.zeros(len(wavelengths), dtype=float)
+
 
     for v1 in range(0, nb_vib_levels):
         for v2 in range(0, nb_vib_levels):
@@ -457,5 +460,20 @@ def get_whole_spectrum(wavelengths, nb_vib_levels=5, nb_rot_levels=60,  T_el=300
                     j1, j2 = i, i
                     l, p = get_l_prob(v1, j1, v2, j2)#! Raie Q
                     add_line(l, p)
-                    
-    return spectrum/np.max(spectrum)
+                                    
+    M=np.max(spectrum)
+    if M == 0:
+        print("Attention, le spectre est nul")
+        print("Voici les paramètres utilisés :")
+        print(f"\tnb_vib_levels : {nb_vib_levels}")
+        print(f"\tnb_rot_levels : {nb_rot_levels}")
+        print(f"\tT_el : {T_el}")
+        print(f"\tT_rot : {T_rot}")
+        print(f"\tT_vib : {T_vib}")
+        print(f"\tsigma_exp : {sigma_exp}")
+        print(f"\tshape : {shape}")
+        print(f"\trelative_addition : {relative_addition}")
+        print(f"\twavelengths : {wavelengths}")
+        
+        return spectrum
+    return spectrum/M

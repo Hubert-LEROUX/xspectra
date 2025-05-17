@@ -190,7 +190,7 @@ def get_best_fit(wavelengths, spectrum, T_el=1_000, T_vib=907, T_rot=1_000, elar
             
         score = compute_score_fit(spectrum, modelisation_spectrum_function(w_scale*wavelengths+w_decalage, T_el=T_el, T_rot=T_rot))
         if verbose:
-            print(f"Iteration {i+1:3d} | Score: {score:8.3f} | Elargissement: {elargissement:6.2f} nm | T_vib = {T_vib:6.0f} | T_rot: {T_rot:6.0f} K | Scale {w_scale:1.8f} | Décalage: {w_decalage:6.2f} nm")
+            print(f"Iteration {i+1:3d} | Score: {score:8.3f} | Elargissement: {elargissement:6.2f} nm | T_vib = {T_vib:6.0f} | T_rot: {T_rot:6.0f} K | Scale {w_scale:1.8f} | Décalage: {w_decalage:4.4f} nm")
     
     return score, T_vib, T_rot, elargissement, w_decalage, w_scale
 
