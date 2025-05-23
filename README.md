@@ -108,7 +108,7 @@ Check the [CONTRIBUTING](CONTRIBUTING.md) section.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the GNU Lesser General Public License v3 (LGPL-3.0). See the `LICENSE` file for details.
 
 ## Acknowledgments
 
@@ -223,7 +223,7 @@ Consultez la section [CONTRIBUTING](CONTRIBUTING.md).
 
 ## Licence
 
-Ce projet est sous licence MIT. Consultez le fichier `LICENSE` pour plus de détails.
+Ce projet est sous licence GNU Lesser General Public License v3 (LGPL-3.0). Consultez le fichier `LICENSE` pour plus de détails.
 
 ## Remerciements
 
