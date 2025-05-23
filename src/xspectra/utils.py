@@ -99,7 +99,7 @@ def get_points_folder(folder, method="maxima", kyrill=False):
 
 
 def get_temp_vib(r):
-    return 3.954e-20 / (const.k * np.log(r * (337.09546/333.81134)))
+    return 3.954e-20 / (const.k * np.log(r * ((franck_condon_factors[1][1] * 337.09546)/(franck_condon_factors[0][0] * 333.81134))))
 
 def transform(X, x1=337.459, y1=337.095, x2=334.44, y2=333.81):
     """

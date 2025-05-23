@@ -17,3 +17,10 @@ pytest tests/
 - Follow PEP 8
 - Use type hints
 - Write docstrings in Google format
+
+
+## Future improvements 
+- Use POO for the library
+- Speed up fit
+- Manage mor molecules -> import data with astroquery
+- Create a python package at [https://pypi.org/](https://pypi.org/)

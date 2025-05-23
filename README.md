@@ -46,13 +46,13 @@ Check the examples folder !
 The project includes a nitrogen spectrum simulation tool that, when adjusted to the studied spectrum, allows determining the rotational temperature, as well as the broadening and wavelength shift caused by calibration errors. This fitting process is performed using trichotomy, as the distance between the simulation spectrum and the studied spectrum is a convex function of the parameters, as shown in the following figure:
 
 <div align="center">
-    <img src="./pictures/scores_function.png" alt="scores_function" width="70%">
+    <img src="./pictures/scores_fit_params.png" alt="scores_function" width="70%">
 </div>
 
 This results in robust fits, as demonstrated in the examples:
 
 <div align="center">
-    <img src="./pictures/spectrum_simulation.png" alt="fit" width="70%">
+    <img src="./pictures/fit_simulation.png" alt="fit" width="70%">
 </div>
 
 ## Bin - Commmand line tool
@@ -79,6 +79,24 @@ Processing files: 100%|███████████████████
 Check the [documentation](docs.md) for more info !
 
 
+## Structure 
+
+- `src/spectra` contains the library with the following subpackages :
+  - `atom` specialized in atom spectra analysis
+  - `utils` containing some global tools to analyse spectra
+  - `simulation` to generate theorical spectra of diatomic molecules
+  - `visualization` to display some visual data 
+- `examples` contains usage examples of the library, including scripts for spectral analysis and simulation.
+  - `data` useful for the examples
+  - `pdf` contains pdf versions of the jupyters
+- `pictures` contains images used in the documentation, such as simulation graphs and score plots.
+- `requirements.txt` lists the dependencies required to run the project.
+- `README.md` provides an overview of the project, its features, and instructions for installation and usage.
+- `docs.md` contains detailed documentation for users and developers.
+- `LICENSE` specifies the terms of the project's license.
+- `CONTRIBUTING.md` explains how to contribute to the project, including guidelines for pull requests and bug reports.
+
+
 ## Documentation
 
 Detailed documentation is available in the `docs.md` file. It includes descriptions and examples for all the functions provided by the library.
@@ -86,6 +104,7 @@ Detailed documentation is available in the `docs.md` file. It includes descripti
 ## Contributing
 
 Contributions are welcome! If you have suggestions or improvements, feel free to open an issue or submit a pull request.
+Check the [CONTRIBUTING](CONTRIBUTING.md) section. 
 
 ## License
 
@@ -97,9 +116,9 @@ This library was developed as part of the MODAL project in 2025 for the spectral
 
 ---
 
-# X-Spectra (Français)
+# X-Spectra
 
-X-Spectra est une bibliothèque Python conçue pour l'analyse spectrale du plasma d'azote. Elle fournit des outils pour le traitement des données, la simulation spectrale et la visualisation, facilitant ainsi les calculs scientifiques automatisés et l'analyse des données expérimentales.
+X-Spectra est une bibliothèque Python conçue pour l'analyse spectrale du plasma d'azote. Elle fournit des outils pour le traitement des données, la simulation spectrale et la visualisation, facilitant ainsi l'automatisation des calculs scientifiques et l'analyse des données expérimentales.
 
 ## Fonctionnalités
 
@@ -138,33 +157,33 @@ pip install -r requirements.txt
 
 ## Utilisation
 
-Consultez le dossier `examples` !
+Consultez le dossier d'exemples !
 
-## Simulation
+## Simulation 
 
-Le projet contient un outil de simulation de spectre de diazote qui permet en l'ajustant au spectre étudié de trouver la température rotationnelle, ainsi que l'élargissement et le décalage en longueur d'onde dû aux mauvaises calibrations. Ce *fit* sur les données est effectués par trichotomie, la distance du spectre de simulation au spectre étudié étant une fonction convexe des paramètres, comme on peut le voir sur la figure suivante : 
+Le projet inclut un outil de simulation de spectre d'azote qui, une fois ajusté au spectre étudié, permet de déterminer la température rotationnelle, ainsi que l'élargissement et le décalage en longueur d'onde causés par des erreurs de calibration. Ce processus d'ajustement est réalisé à l'aide de la trichotomie, car la distance entre le spectre simulé et le spectre étudié est une fonction convexe des paramètres, comme illustré dans la figure suivante :
 
 <div align="center">
-    <img src="./pictures/scores_function.png" alt="scores_function" width="70%">
+    <img src="./pictures/scores_fit_params.png" alt="scores_function" width="70%">
 </div>
 
-Ce qui nous donnes des fits robustes comme on peut le voir dans les examples : 
+Cela aboutit à des ajustements robustes, comme démontré dans les exemples :
 
 <div align="center">
-    <img src="./pictures/spectrum_simulation.png" alt="fit" width="70%">
+    <img src="./pictures/fit_simulation.png" alt="fit" width="70%">
 </div>
 
 ## Bin - Outil en ligne de commande
 
-Le module `bin` fournit une interface en ligne de commande pour traiter les fichiers de spectres afin de calculer les températures vibrationnelle et rotationnelle. Il prend en charge la suppression du bruit de fond, la détection des pics et l'ajustement avec un spectre simulé. Les résultats peuvent être sauvegardés dans un dossier spécifié, et les graphiques peuvent être affichés ou sauvegardés.
+Le module `bin` fournit une interface en ligne de commande pour traiter les fichiers de spectre afin de calculer les températures vibrationnelle et rotationnelle. Il prend en charge la suppression de l'arrière-plan, la détection des pics et l'ajustement avec un spectre simulé. Les résultats peuvent être enregistrés dans un dossier spécifié, et les graphiques peuvent être affichés ou sauvegardés.
 
-### Exemple d'utilisation
+### Utilisation
 
 ```bash
 >>> python -m xspectra.bin ./examples/data/temperature_analysis
 Traitement des fichiers : 100%|█████████████████████████████████████████| 3/3 [00:09<00:00,  3.28s/it]
 +-------------+------------------------+------------------------------+-------------------+-----------------------------+------------+
-|   T_vib (K) | T_rot (K) - R branch   |   T_rot (K) - fit simulation |   Broadening (nm) |   Wavelength Deviation (nm) | Filename   |
+|   T_vib (K) | T_rot (K) - branche R  |   T_rot (K) - simulation fit |   Élargissement (nm) |   Déviation en longueur d'onde (nm) | Fichier   |
 +=============+========================+==============================+===================+=============================+============+
 |     808.233 | 302 ± 14               |                          255 |             0.086 |                       0.104 | 1.txt      |
 +-------------+------------------------+------------------------------+-------------------+-----------------------------+------------+
@@ -176,6 +195,23 @@ Traitement des fichiers : 100%|████████████████�
 
 Consultez la [documentation](docs.md) pour plus d'informations !
 
+## Structure 
+
+- `src/spectra` contient la bibliothèque avec les sous-packages suivants :
+  - `atom` spécialisé dans l'analyse des spectres atomiques
+  - `utils` contenant des outils globaux pour analyser les spectres
+  - `simulation` pour générer des spectres théoriques de molécules diatomiques
+  - `visualization` pour afficher des données visuelles
+- `examples` contient des exemples d'utilisation de la bibliothèque, y compris des scripts pour l'analyse spectrale et la simulation.
+  - `data` utile pour les exemples
+  - `pdf` contient les versions PDF des notebooks Jupyter
+- `pictures` contient des images utilisées dans la documentation, telles que des graphiques de simulation et des tracés de scores.
+- `requirements.txt` liste les dépendances nécessaires pour exécuter le projet.
+- `README.md` fournit une vue d'ensemble du projet, de ses fonctionnalités et des instructions pour l'installation et l'utilisation.
+- `docs.md` contient une documentation détaillée pour les utilisateurs et les développeurs.
+- `LICENSE` spécifie les termes de la licence du projet.
+- `CONTRIBUTING.md` explique comment contribuer au projet, y compris les directives pour les pull requests et les rapports de bugs.
+
 ## Documentation
 
 Une documentation détaillée est disponible dans le fichier `docs.md`. Elle inclut des descriptions et des exemples pour toutes les fonctions fournies par la bibliothèque.
@@ -183,6 +219,7 @@ Une documentation détaillée est disponible dans le fichier `docs.md`. Elle inc
 ## Contribuer
 
 Les contributions sont les bienvenues ! Si vous avez des suggestions ou des améliorations, n'hésitez pas à ouvrir une issue ou à soumettre une pull request.
+Consultez la section [CONTRIBUTING](CONTRIBUTING.md).
 
 ## Licence
 
@@ -191,4 +228,3 @@ Ce projet est sous licence MIT. Consultez le fichier `LICENSE` pour plus de dét
 ## Remerciements
 
 Cette bibliothèque a été développée dans le cadre du projet MODAL en 2025 pour l'étude spectrale du plasma d'azote.
-
